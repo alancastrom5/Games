@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo-Memoria</title>
+    <meta name="description" content="Jogo-Memoria" />
+
+
+    {{ __loadsdk__ }}
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-weight: lighter;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+            font-family: 'Hbold', sans-serif;
+        }
+
+        .start-button {
+            background-color: yellow;
+            color: black;
+            font-size: 2vw;
+            padding: 2% 3%;
+            border: none;
+            border-radius: 1vw;
+            cursor: pointer;
+            text-transform: uppercase;
+            outline: none;
+            transition: opacity 0.3s ease;
+        }
+        .wrap {
+            position: relative;
+            height: 100%;
+            width: 100%;
+           /* padding-bottom: 20px; */
+            display: none;
+        }
+        
+        .game {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            perspective: 500px;
+            min-height: 100%;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .card {
+            width: 25%;
+            height: 20%;
+            padding: 3px;
+            position: relative;
+            cursor: pointer;
+            perspective: 500px;
+        }
+        
+        .card .inside {
+            width: 100%;
+            height: 100%;
+            display: block;
+            transform-style: preserve-3d;
+            transition: .4s ease-in-out;
+            background: white;
+        }
+        
+        .card .inside.picked, .card .inside.matched {
+            transform: rotateY(180deg);
+        }
+        
+        .card .front, .card .back {
+            border: 1px solid black;
+            backface-visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            z-index: 1;
+        }
+        
+        .card .front {
+            transform: rotateY(-180deg);
+        }
+        
+        .card .back {
+            transform: rotateX(0);
+        }
+        
+        .card img {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+        .card .inside.matched::before {
+            opacity: 0.3; /* Valor final para o efeito verde translúcido */
+        }
+        /* Animação de escala */
+        @keyframes scale-up {
+            0% {
+                transform: scale(0.8);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .animate-scale {
+            animation: scale-up 500ms ease-in 100ms forwards; /* Aplica a animação de escala */
+        }
+
+        /* Efeito verde para cartas "matched" */
+        .card .inside.matched::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #4cff50; /* Verde sólido */
+            opacity: 0.3; /* Transparência do efeito */
+            z-index: 1;
+            border-radius: 10px;
+        }
+
+        .card .inside.matched {
+            transform: rotateY(180deg);
+        }
+        
+
+        .modal-overlay {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1; 
+        }
+        
+        .modal {
+            position: relative;
+            width: 500px;
+            height: 400px;
+            background: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 2vh;
+        }
+        
+        .modal .winner {
+            font-size: 40px;
+            text-align: center;
+            color: #4d4d4d;
+            margin: 0;
+        }
+        
+        .restart {
+            font-size: 30px;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background: #4d4d4d;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 2vh;
+        }        
+
+        footer {
+            height: 20px;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+
+        footer .disclaimer {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <button class="start-button" onclick="iniciarJogo()">Iniciar Jogo</button>
+    <div class="wrap">
+        <div class="game"></div>
+            
+        <div class="modal-overlay">
+            <div class="modal">
+                <h2 class="winner">Você é demais!</h2>
+                <button class="restart">Jogar novamente?</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function iniciarJogo() {
+            document.querySelector('.wrap').style.display = 'block';
+            const button = document.querySelector(".start-button");
+            button.style.display = "none";
+        (function() {
+            var Memory = {
+                init: function(cards) {
+                    if (!cards || cards.length !== 10) {
+                        return console.error('The game requires exactly 10 unique cards.'); // Retorna erro se o número de cartas for inválido
+                    }
+        
+                    this.game = document.querySelector(".game");
+                    this.cardsArray = cards.concat(cards); // Duplicar para 20 cartas (10 pares)
+                    this.shuffleCards(this.cardsArray);
+                    this.setup();
+                    this.startTimer();  // Inicia o cronômetro
+                },
+        
+                shuffleCards: function(cardsArray) {
+                    this.cards = this.shuffle(cardsArray);
+                },
+        
+                setup: function() {
+                    this.html = this.buildHTML();
+                    this.game.innerHTML = this.html;
+                    this.memoryCards = document.querySelectorAll(".card");
+                    this.paused = false;
+                    this.guess = null;
+                    this.binding();
+                },
+        
+                binding: function() {
+                    this.memoryCards.forEach(card => card.addEventListener("click", this.cardClicked.bind(this)));
+                    document.querySelector("button.restart").addEventListener("click", function() {
+                        window.location.reload(); // Recarrega a página
+                    });
+                },
+                cardClicked: function(e) {
+                    var _ = Memory;
+                    var card = e.currentTarget;
+                    var inside = card.querySelector(".inside");
+                    
+                    if (!_.paused && !inside.classList.contains("matched") && !inside.classList.contains("picked")) {
+                        inside.classList.add("picked");
+                        
+                        if (!_.guess) {
+                            _.guess = card;
+                        } else if (_.guess.getAttribute("data-id") === card.getAttribute("data-id")) {
+                            // Quando há um match
+                            document.querySelectorAll(".picked").forEach(function(pickedCard) {
+                                pickedCard.classList.add("matched");
+                                pickedCard.classList.remove("picked"); // Remove a classe "picked"
+                
+                                // Adiciona a animação de escala na frente da carta correspondente
+                               // pickedCard.classList.add("animate-scale");
+                
+                                // Remove a classe de animação após a execução
+                                setTimeout(() => {
+                                    pickedCard.classList.remove("animate-scale");
+                                }, 500); // O tempo deve ser o mesmo da animação
+                            });
+                            _.guess = null;
+                        } else {
+                            _.paused = true;
+                            setTimeout(function() {
+                                document.querySelectorAll(".picked").forEach(function(pickedCard) {
+                                    pickedCard.classList.remove("picked");
+                                });
+                                _.paused = false;
+                                _.guess = null;
+                            }, 600);
+                        }
+                
+                        if (document.querySelectorAll(".matched").length === _.cardsArray.length) {
+                            _.win();
+                        }
+                    }
+                },
+                        
+                startTimer: function() {
+                    var _ = this;
+                    this.timeRemaining = 120;  // 2 minutos em segundos
+                    this.timer = setInterval(function() {
+                        _.timeRemaining--;
+                        console.log(_.timeRemaining);  // Mostra o tempo restante no console (pode remover depois)
+        
+                        if (_.timeRemaining <= 0) {
+                            clearInterval(_.timer);  // Para o cronômetro
+                            _.timesUp();  // Chama a função de fim de jogo
+                        }
+                    }, 1000);  // Atualiza a cada segundo
+                },
+        
+                timesUp: function() {
+                    var matchedCards = document.querySelectorAll(".matched").length / 2; // Calcula o número de acertos
+                    this.paused = true;
+                        this.showModal(`Poxa, não foi dessa vez. Você acertou ${matchedCards} de 10 pares!`);
+                        if(matchedCards == 0){
+                            this.showModal(`Poxa, voce nao acertou nemhuma alternativa ${matchedCards} de 10 `);
+                        }
+                    this.game.style.display = "none";
+                },
+
+                win: function() {
+                    this.paused = true;
+                    clearTimeout(this.timer); // Para o cronômetro quando o jogador vence
+                    setTimeout(function() {
+                        Memory.showModal("Parabéns, você acertou Todos os pares"); // Exibe modal de vitória
+                        Memory.game.style.display = "none";
+                    }, 1000);
+                },
+        
+                showModal: function(message) {
+                    document.querySelector(".modal-overlay .winner").textContent = message;
+                    document.querySelector(".modal-overlay").classList.add("active");
+                },
+        
+                hideModal: function() {
+                    document.querySelector(".modal-overlay").classList.remove("active");
+                },
+        
+                reset: function() {
+                    clearTimeout(this.timer);  // Reinicia o cronômetro
+                    this.hideModal();
+                    this.shuffleCards(this.cardsArray);
+                    this.setup();
+                    this.startTimer();  // Reinicia o cronômetro
+                    this.game.style.display = "block";
+                },
+        
+                shuffle: function(array) {
+                    var counter = array.length, temp, index;
+                    while (counter > 0) {
+                        index = Math.floor(Math.random() * counter);
+                        counter--;
+                        temp = array[counter];
+                        array[counter] = array[index];
+                        array[index] = temp;
+                    }
+                    return array;
+                },
+        
+                buildHTML: function() {
+                    var frag = '';
+                    this.cards.forEach(function(card) {
+                        frag += `<div class="card" data-id="${card.id}">
+                                    <div class="inside">
+                                        <div class="front"><img src="${card.img}" alt="${card.name}" /></div>
+                                        <div class="back"><img src="https://images.icon-icons.com/651/PNG/512/Icon_Business_Set_00014_A_icon-icons.com_59852.png" alt="Codepen" /></div>
+                                    </div>
+                                </div>`;
+                    });
+                    return frag;
+                }
+            };
+        
+            var cards = [
+                { name: "php", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/php-logo_1.png", id: 1 },
+                { name: "css3", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/css3-logo.png", id: 2 },
+                { name: "html5", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/html5-logo.png", id: 3 },
+                { name: "jquery", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/jquery-logo.png", id: 4 },
+                { name: "javascript", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/js-logo.png", id: 5 },
+                { name: "node", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/nodejs-logo.png", id: 6 },
+                { name: "photoshop", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/photoshop-logo.png", id: 7 },
+                { name: "python", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/python-logo.png", id: 8 },
+                { name: "rails", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/rails-logo.png", id: 9 },
+                { name: "sass", img: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/74196/sass-logo.png", id: 10 }
+            ];
+        
+            Memory.init(cards);
+        })();
+    }
+        </script>        
+</body>
+</html>

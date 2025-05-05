@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cassino</title>
+    <meta name="description" content="Cassino" />
+    <meta name="force-reload" content="yes">
+    <meta name="allow-interaction" content="yes">
+
+    {{ __loadsdk__ }}
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-weight: lighter;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center; 
+            background-color: black;
+            font-family: 'Hbold', sans-serif;
+        }
+        .roulette-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        .roulette-wrapper .selector {
+            width: 3px;
+            background: grey;
+            left: 50%;
+            height: 100%;
+            transform: translate(-50%, 0%);
+            position: absolute;
+            z-index: 2;
+        }
+        .roulette-wrapper .wheel {
+            display: flex;
+        }
+        .roulette-wrapper .wheel .row {
+            display: flex;
+        }
+        .roulette-wrapper .wheel .row .card {
+            height: 75px;
+            width: 75px;
+            margin: 3px;
+            border-radius: 8px;
+            border-bottom: 3px solid rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5em;
+        }
+        .card.red {
+            background: #F95146;
+        }
+        .card.black {
+            background: #2D3035;
+        }
+        .card.green {
+            background: #00C74D;
+        }
+        .start-button {
+            background-color: yellow;
+            color: black;
+            font-size: 2vw;
+            padding: 2% 3%;
+            border: none;
+            border-radius: 1vw;
+            cursor: pointer;
+            text-transform: uppercase;
+            outline: none;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+        }
+        .closing {
+            background: none;
+            border: none;
+            padding: 0;
+            position: absolute;
+            width: 6%;
+            height: 10.3%;
+            left: 1%;
+            top: 2%;
+            cursor: pointer;
+            outline: none;
+            display: none;
+            z-index: 5;
+        }
+        .closing img {
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.3s ease;
+        }
+        .start-button:hover,
+        .closing:hover {
+            opacity: 0.7;
+        }
+        .wrapper {
+            display: none;
+            width: 35%;
+            background-color: #ffffff;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            padding: 3em;
+            border-radius: 1em;
+            box-shadow: 0 4em 5em rgba(27, 8, 53, 0.2);
+        }
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        #wheel {
+            width: 100%;
+            height: auto;
+        }
+        #spin-btn {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            height: 26%;
+            width: 26%;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 0;
+            background: radial-gradient(#fdcf3b 50%, #d88a40 85%);
+            color: #c66e16;
+            text-transform: uppercase;
+            font-size: 1.8em;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+            outline: none;
+        }
+        #final-value {
+            font-size: 1.5em;
+            text-align: center;
+            margin-top: 1.5em;
+            color: #202020;
+            font-weight: 500;
+        }
+        .marker {
+            position: absolute;
+            top: 4%;
+            left: 47.5%;
+            transform: translateX(-50%);
+            transform: rotate(180deg);
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 33px solid red;
+            z-index: 1;
+        }
+        #resultModal {
+            display: none;
+        }
+        .modal {
+            position: fixed;
+            z-index: 4;
+            left: 0;
+            top: 0%;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2em;
+            border-radius: 2vw;
+            text-align: center;
+            width: 40%;
+            /* margin-left: 26.2%; 
+             margin-top: 24%; */
+        }
+        .close-btn {
+            color: red;
+            float: right;
+            position: relative;
+            font-size: 3vw;
+            top: -3vh;
+            left: 3.2%;
+            cursor: pointer;
+        }
+        .close-btn:hover {
+            color: darkred;
+        }
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .confetti {
+            position: absolute;
+            width: 2%;
+            height: 2%;
+            background-color: red;
+            animation: fall 1s linear infinite;
+            opacity: 0.7;
+        }
+        @keyframes fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+        .confetti:nth-child(2n) {
+            background-color: yellow;
+        }
+        .confetti:nth-child(3n) {
+            background-color: green;
+        }
+        .confetti:nth-child(4n) {
+            background-color: blue;
+        }
+        .confetti:nth-child(5n) {
+            background-color: purple;
+        }
+        #spinButton{
+            display: none
+        }
+        .botao_rodar{
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: 10%;
+            top: 60%;
+            justify-content: center;
+            position: absolute;
+        }
+        #spinButton{
+            background-color: yellow;
+            color: black;
+            font-size: 1.5vw;
+            padding: 2% 4%;
+            border: none;
+            border-radius: 1vw;
+            cursor: pointer;
+            text-transform: uppercase;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="confetti-container"></div>
+    <audio id="spin_audio" src='../audio_roleta.mp3' preload="auto"></audio>
+    <button class="start-button" onclick="iniciarJogo()">Iniciar Jogo</button>
+    <button id="close" class="closing" onClick="close_clip()">
+        <img src='../reset.png'/>
+    </button>
+    <link href="https://fonts.googleapis.com/css?family=Titillium+Web" rel="stylesheet">
+
+    <div class='roulette-wrapper'>
+        <div class='selector'></div>
+        <div class='wheel'></div>
+    </div>
+
+    <div class="botao_rodar">
+        <button id="spinButton">Spin</button>
+        <div id="resultModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <p id="modal-text"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function iniciarJogo() {
+            document.querySelector('.closing').style.display = 'block';
+            const button = document.querySelector(".start-button");
+            button.style.display = "none";
+            document.querySelector('#spinButton').style.display = 'block';
+        
+            initWheel();
+        
+            // Adiciona o evento de clique ao botão de girar a roda
+            document.getElementById('spinButton').addEventListener('click', function () {
+                const randomOutcome = Math.floor(Math.random() * 14) + 1; // Gera um número aleatório de 1 a 14
+                console.log(`Número aleatório gerado: ${randomOutcome}`);
+                spinWheel(randomOutcome);
+            });
+        }
+        
+        function initWheel() {
+            const wheel = document.querySelector('.roulette-wrapper .wheel');
+            let row = "<div class='row'>" +
+                "  <div class='card red'>1</div>" +
+                "  <div class='card black'>14</div>" +
+                "  <div class='card red'>2</div>" +
+                "  <div class='card black'>13</div>" +
+                "  <div class='card red'>3</div>" +
+                "  <div class='card black'>12</div>" +
+                "  <div class='card red'>4</div>" +
+                "  <div class='card black'>11</div>" +
+                "  <div class='card red'>5</div>" +
+                "  <div class='card black'>10</div>" +
+                "  <div class='card red'>6</div>" +
+                "  <div class='card black'>9</div>" +
+                "  <div class='card red'>7</div>" +
+                "  <div class='card black'>8</div>" +
+                "</div>";
+        
+            for (let x = 0; x < 29; x++) {
+                wheel.innerHTML += row;
+            }
+        }
+        
+        function spinWheel(roll) {
+            const wheel = document.querySelector('.roulette-wrapper .wheel');
+            const order = [1, 14, 2, 13, 3, 12, 4, 11, 5, 10, 6, 9, 7, 8];
+            const position = order.indexOf(roll);
+        
+            console.log(`Número escolhido para girar: ${roll}`);
+            console.log(`Posição do número na roleta: ${position}`);
+        
+            const rows = 12; // Número de linhas de cards
+            const card = 75 + 3 * 2; // Largura do card + margem (75px de largura + 6px de margens)
+        
+            // Cálculo da posição de parada
+            let landingPosition = (rows * 15 * card) + (position * card);
+            console.log(`Posição de parada calculada: ${landingPosition}`);
+        
+            // Adiciona um valor aleatório para a rotação, mas sem afetar a parada
+            const randomize = Math.floor(Math.random() * 75) - (75 / 2);
+            landingPosition += randomize;
+            console.log(`Posição de parada final (com ajuste aleatório): ${landingPosition}`);
+
+            let ajusteExtra = -370; // Ajuste extra que você pode definir
+            landingPosition += ajusteExtra; // Adiciona o ajuste à posição final
+            console.log(`Posição de parada após ajuste extra: ${landingPosition}`);
+        
+            const object = {
+                x: Math.floor(Math.random() * 50) / 100,
+                y: Math.floor(Math.random() * 20) / 100
+            };
+        
+            wheel.style.transitionTimingFunction = `cubic-bezier(0,${object.x},${object.y},1)`;
+            wheel.style.transitionDuration = '5.5s';
+            wheel.style.transform = `translate3d(-${landingPosition}px, 0px, 0px)`;
+        
+            setTimeout(function () {
+                wheel.style.transitionTimingFunction = '';
+                wheel.style.transitionDuration = '';
+        
+                // Cálculo para resetar a posição da roda
+                const resetTo = -(position * card + randomize);
+                console.log(`Posição de reset da roleta: ${resetTo}`);
+                wheel.style.transform = `translate3d(${resetTo}px, 0px, 0px)`;
+        
+                valueGenerator(roll); // Chama a função para exibir o número sorteado
+            }, 6 * 1000);
+        }
+        
+        const valueGenerator = (sorteado) => {
+            console.log(`Número sorteado: ${sorteado}`);
+            document.getElementById("modal-text").innerHTML = `Número sorteado: ${sorteado}`;
+            const modal = document.getElementById("resultModal");
+            modal.style.display = "flex";
+            generateConfetti();
+        };
+        
+        document.querySelector(".close-btn").addEventListener('click', function () {
+            const modal = document.getElementById("resultModal");
+            modal.style.display = "none";
+        });
+        
+        window.onclick = function (event) {
+            const modal = document.getElementById("resultModal");
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        };
+        
+        function close_clip() {
+            location.reload();
+        }
+        
+        function generateConfetti() {
+            const confettiContainer = document.querySelector('.confetti-container');
+            confettiContainer.innerHTML = '';
+        
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confettiContainer.appendChild(confetti);
+            }
+            setTimeout(() => {
+                confettiContainer.innerHTML = '';
+            }, 4000);
+        }  
+    </script>
+</body>
+</html>

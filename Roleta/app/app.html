@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roleta</title>
+    <meta name="description" content="Roleta" />
+
+
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-weight: lighter;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+            font-family: 'Hbold', sans-serif;
+        }
+
+        .start-button {
+            background-color: yellow;
+            color: black;
+            font-size: 2vw;
+            padding: 2% 3%;
+            border: none;
+            border-radius: 1vw;
+            cursor: pointer;
+            text-transform: uppercase;
+            outline: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .closing {
+            background: none;
+            border: none;
+            padding: 0;
+            position: absolute;
+            width: 6%;
+            height: 10.3%;
+            left: 1%;
+            top: 2%;
+            outline: none;
+            display: none;
+        }
+
+        .closing img {
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.3s ease;
+        }
+
+        .start-button:hover, .closing:hover {
+            opacity: 0.7;
+        }
+
+        .wrapper {
+            display: none;
+            width: 35%;
+            background-color: #ffffff;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            padding: 3em;
+            border-radius: 1em;
+            box-shadow: 0 4em 5em rgba(27, 8, 53, 0.2);
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #wheel {
+            width: 100%;
+            height: auto;
+        }
+
+        #spin-btn {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            height: 26%;
+            width: 26%;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 0;
+            background: radial-gradient(#fdcf3b 50%, #d88a40 85%);
+            color: #c66e16;
+            text-transform: uppercase;
+            font-size: 1.8em;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+            outline: none;
+        }
+
+        #final-value {
+            font-size: 1.5em;
+            text-align: center;
+            margin-top: 1.5em;
+            color: #202020;
+            font-weight: 500;
+        }
+
+        .marker {
+            position: absolute;
+            top: 4%;
+            left: 47.5%;
+            transform: translateX(-50%);
+            transform: rotate(180deg);
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 33px solid red;
+            z-index: 1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2em;
+            border-radius: 2vw;
+            text-align: center;
+            width: 80%;
+            margin-left: 4.2%;
+            margin-top: 42%;
+        }
+
+        .close-btn {
+            color: red;
+            float: right;
+            position: relative;
+            font-size: 3vw;
+            top: -3vh;
+            left: 3.2%;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: darkred;
+        }
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2; /* Para que apareça acima da roleta */
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 2%;
+            height: 2%;
+            background-color: red;
+            animation: fall 1s linear infinite;
+            opacity: 0.7;
+        }
+        
+        @keyframes fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+        
+        .confetti:nth-child(2n) { background-color: yellow; }
+        .confetti:nth-child(3n) { background-color: green; }
+        .confetti:nth-child(4n) { background-color: blue; }
+        .confetti:nth-child(5n) { background-color: purple; }
+        
+        @keyframes fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+        .wheel-segment-text {
+            text-align: center;
+            transform: rotate(-30deg); /* Ajustar conforme o ângulo da sua roleta */
+            font-size: 16px;  /* Ajuste o tamanho da fonte conforme necessário */
+            position: absolute; /* Para garantir que ele sempre se mantenha no mesmo lugar */
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+        }        
+
+    </style>
+</head>
+<body>
+    <div class="confetti-container"></div>
+    <audio id="spin_audio" src='../audio_roleta.mp3' preload="auto"></audio>
+    <button class="start-button" onclick="iniciarJogo()">Iniciar Jogo</button>
+    <button id="close" class="closing" onClick="close_clip()">
+        <img src='../reset.png'/>
+    </button>
+    <div class="wrapper">
+        <div class="marker"></div>
+        <div class="container">
+            <canvas id="wheel" width="400" height="400"></canvas>
+            <button id="spin-btn">Spin</button>
+        </div>
+        <div id="final-value">
+            <p>Clique no botão Spin para começar</p>
+        </div>
+        <div id="resultModal" class="modal">
+            <div class="modal-content">
+              <span class="close-btn">&times;</span>
+              <p id="modal-text"></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        const campo1 = "1"
+        const campo2 = "2"
+        const campo3 = "3"
+        const campo4 = "4"
+        const campo5 = "5"
+        const campo6 = "6"
+        const campo7 = "7"
+        const campo8 = "8"
+        const campo9 = "9"
+        const campo10 = "10"
+
+        function iniciarJogo() {
+            document.querySelector('.closing').style.display = 'block';
+            const button = document.querySelector(".start-button");
+            button.style.display = "none";
+            document.querySelector(".modal").style.display = "none";
+            
+            // Mostra a roleta
+            document.querySelector('.wrapper').style.display = 'block';
+        
+            const canvas = document.getElementById("wheel");
+            const ctx = canvas.getContext("2d");
+            const spinBtn = document.getElementById("spin-btn");
+            const finalValue = document.getElementById("final-value");
+        
+            // Valores dos números e intervalos da roleta
+            let rotationValues = [
+                { value: campo10 },
+                { value: campo1 },
+                { value: campo2 },
+                { value: campo3 },
+                { value: campo4 },
+                { value: campo5 },
+                { value: campo6 },
+                { value: campo7 },
+                { value: campo8 },
+                { value: campo9 }
+            ];
+        
+            const pieColors = [
+                "#808080", "#000000", "#4F4F4F", "#DCDCDC", "#C0C0C0", "#b163da",
+                "#FF5733", "#33FF57", "#3357FF", "#FF33A8"
+            ];
+        
+            // Função para embaralhar arrays
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+        
+            // Função para desenhar a roleta com números e cores embaralhados
+            function createWheel(shuffledColors) {
+                const segments = rotationValues.length;
+                const wheelSize = canvas.width;
+                const segmentAngle = 2 * Math.PI / segments;
+
+                for (let i = 0; i < segments; i++) {
+                    const angle = segmentAngle * i;
+                    ctx.beginPath();
+                    ctx.moveTo(canvas.width / 2, canvas.height / 2);
+                    ctx.arc(canvas.width / 2, canvas.height / 2, wheelSize / 2, angle, angle + segmentAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = shuffledColors[i];
+                    ctx.fill();
+
+                    // Estilo do texto
+                    ctx.fillStyle = "white"; // Cor do texto (branco para contraste)
+                    ctx.font = "bold 24px sans-serif"; // Tamanho e estilo da fonte
+
+                    // Cálculo da posição do texto
+                    const textAngle = angle + segmentAngle / 2; // Ângulo do centro do segmento
+                    const x = canvas.width / 2 + (wheelSize / 3) * Math.cos(textAngle); // Ajustado para dentro
+                    const y = canvas.height / 2 + (wheelSize / 3) * Math.sin(textAngle); // Ajustado para dentro
+
+                    // Salva o contexto atual
+                    ctx.save();
+                    
+                    // Move o contexto para a posição do texto
+                    ctx.translate(x, y);
+                    
+                    // Rotaciona o contexto para que o texto fique alinhado horizontalmente
+                    ctx.rotate(textAngle);
+                    
+                    // Alinha o texto no centro
+                    ctx.textAlign = "center"; // Centraliza horizontalmente
+                    ctx.textBaseline = "middle"; // Centraliza verticalmente
+
+                    // Adiciona o texto ao segmento
+                    ctx.fillText(rotationValues[i].value, 0, 0); // (0, 0) porque já estamos na posição correta
+
+                    // Restaura o contexto para o estado anterior
+                    ctx.restore();
+                }
+            }
+
+
+
+            // Chama a função para criar a roleta assim que o jogo inicia
+            createWheel(pieColors); // Passa as cores originais
+        
+            // Função para determinar o valor do sorteio baseado na posição fixa do marcador
+            const valueGenerator = () => {
+                const sorteado = rotationValues[0].value;
+                finalValue.innerHTML = `<p>Parabéns, o sorteado foi: ${sorteado}</p>`;
+                document.getElementById("modal-text").innerHTML = `Número sorteado: ${sorteado}`;
+                const modal = document.getElementById("resultModal");
+                modal.style.display = "block";
+                generateConfetti(); // Gera os confetes quando o modal abrir
+                spinBtn.disabled = false;
+            };
+        
+            let count = 0;
+        
+            // Função que gira a roda
+            const rotateWheel = () => {
+                spinBtn.disabled = true;
+                finalValue.innerHTML = `<p>Girando...</p>`;
+        
+                // Inicia o áudio
+                const spinAudio = document.getElementById("spin_audio");
+                spinAudio.currentTime = 0; // Reinicia o áudio para tocar desde o início
+                spinAudio.play(); // Inicia a reprodução do áudio
+        
+                // Embaralha os números e as cores antes de girar
+                rotationValues = shuffleArray(rotationValues);
+                const shuffledColors = shuffleArray([...pieColors]); // Embaralha as cores
+        
+                // Gera rotações completas para garantir o efeito de desaceleração
+                let ajusteFino = -111;  // Ajuste fino de posição
+                let finalDegree = 360 * 10 + ajusteFino;  // Adiciona o ajuste fino ao final da rotação
+        
+                let rotationInterval = window.setInterval(() => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    createWheel(shuffledColors); // Passa as cores embaralhadas
+                    ctx.save();
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.rotate((count * Math.PI) / 180);
+                    ctx.translate(-canvas.width / 2, -canvas.height / 2);
+                    createWheel(shuffledColors); // Passa as cores embaralhadas
+                    ctx.restore();
+        
+                    if (count >= finalDegree) {
+                        valueGenerator(); // Sorteia o número no primeiro segmento
+                        window.clearInterval(rotationInterval);
+                        count = 0; // Reseta o contador
+                    } else {
+                        // Modifica o incremento para desacelerar
+                        const increment = Math.max(1, Math.floor((finalDegree - count) / 30)); // Desacelera
+                        count += increment; // Incrementa a rotação
+                    }
+                }, 30); // O tempo do intervalo pode ser ajustado conforme necessário
+            };
+        
+            // Inicia o sorteio quando o botão "Spin" for clicado
+            spinBtn.addEventListener("click", rotateWheel);
+        
+            // Fecha o modal ao clicar no botão de fechar
+            document.querySelector(".close-btn").addEventListener('click', function() {
+                const modal = document.getElementById("resultModal");
+                modal.style.display = "none";
+            });
+        
+            // Fecha o modal clicando fora da caixa de conteúdo
+            window.onclick = function(event) {
+                const modal = document.getElementById("resultModal");
+                if (event.target === modal) {
+                    modal.style.display = "none";
+                }
+            };
+        }
+        
+        // Função para gerar os confetes
+        function generateConfetti() {
+            const confettiContainer = document.querySelector('.confetti-container');
+            confettiContainer.innerHTML = ''; // Limpa confetes anteriores
+        
+            // Gera 100 confetes
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw'; // Posição aleatória
+                confetti.style.animationDelay = Math.random() * 2 + 's'; // Atraso aleatório
+                confettiContainer.appendChild(confetti);
+            }
+        
+            // Remove confetes após 5 segundos
+            setTimeout(() => {
+                confettiContainer.innerHTML = '';
+            }, 4000);
+        }
+        
+        function close_clip() {
+            location.reload();
+        }        
+    </script>
+</body>
+</html>
