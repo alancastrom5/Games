@@ -1,4 +1,4 @@
-# 🎮 README - Coleção de Jogos HTML 🎮  
+# 🎮Coleção de Jogos HTML 🎮  
 
 Três jogos interativos desenvolvidos com HTML, CSS e JavaScript. Cada um com mecânicas únicas e estilos visuais distintos.
 
