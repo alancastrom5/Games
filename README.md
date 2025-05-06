@@ -81,5 +81,5 @@ Todos os jogos estão no arquivo `app.html`, mas podem ser separados em:
 
 ---
 
-Feito com ❤️ por [Seu Nome].  
+Feito com ❤️ por Alan Castro Moura.  
 *Divirta-se!* 🎉  
